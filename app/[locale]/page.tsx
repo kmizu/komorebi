@@ -66,27 +66,7 @@ export default async function Home() {
         </p>
 
         <div className="animate-fade-up delay-500">
-          <Link
-            href="/session"
-            style={{
-              display: 'inline-block',
-              padding: '0.65rem 2.2rem',
-              background: 'var(--sage)',
-              color: '#fff',
-              borderRadius: '100px',
-              fontSize: '0.82rem',
-              letterSpacing: '0.1em',
-              textDecoration: 'none',
-              textTransform: 'uppercase',
-              transition: 'background 0.2s, transform 0.2s',
-            }}
-            onMouseOver={(e: React.MouseEvent<HTMLAnchorElement>) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'var(--sage-d)';
-            }}
-            onMouseOut={(e: React.MouseEvent<HTMLAnchorElement>) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'var(--sage)';
-            }}
-          >
+          <Link href="/session" className="btn-start">
             {t('startSession')}
           </Link>
         </div>
