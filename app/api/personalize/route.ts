@@ -16,6 +16,7 @@ const ProfileSchema = z.object({
   themes: z.array(z.string()),
   anchors: z.array(z.string()),
   emotionalTone: z.enum(['distressed', 'neutral', 'positive', 'mixed']),
+  mentionedTechnique: z.enum(['breath', 'body', 'sound', 'scan', 'open']).nullable().optional(),
 });
 
 const PersonalizeSchema = z.object({
