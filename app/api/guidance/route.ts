@@ -1,0 +1,27 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { generateGuidance } from '@/lib/guidance/generator';
+
+const GuidanceSchema = z.object({
+  mode: z.enum(['breath', 'sound', 'body', 'external', 'reset', 'abort']),
+  duration: z.union([z.literal(30), z.literal(60), z.literal(180)]),
+  riskLevel: z.enum(['none', 'low', 'moderate', 'high', 'crisis']),
+  supervisorMessage: z.string().max(300),
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { mode, duration, riskLevel, supervisorMessage } = GuidanceSchema.parse(body);
+
+    const script = await generateGuidance(mode, duration, riskLevel, supervisorMessage);
+
+    return NextResponse.json({ success: true, data: { script } });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
+    }
+    console.error('[guidance] Error:', err);
+    return NextResponse.json({ success: false, error: 'Guidance generation failed' }, { status: 500 });
+  }
+}

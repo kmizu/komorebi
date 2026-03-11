@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# mindfulness-supervisor
 
-## Getting Started
+A supervision-first mindfulness app. Not a teacher — a safety monitor.
 
-First, run the development server:
+The goal is not deeper meditation. The goal is to notice early when practice is becoming harmful: self-judgment, internal surveillance, forced acceptance, compulsive optimization, or performance framing.
+
+## Setup
 
 ```bash
+npm install
+cp .env.example .env.local
+# Edit .env.local — add API keys (both optional, see below)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Required | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | No | LLM-based supervisor. Without this, rule-based detection only. |
+| `ELEVENLABS_API_KEY` | No | Voice playback. Without this, guidance is text-only. |
+| `ELEVENLABS_VOICE_ID` | No | Voice to use. Defaults to a calm English voice. |
 
-## Learn More
+The app works without any API keys. Supervision uses keyword-based detection. Guidance uses preset scripts.
 
-To learn more about Next.js, take a look at the following resources:
+## What it does
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Check in** — a few questions about your current state
+2. **Supervisor review** — evaluates whether practice is likely to help or harm today
+3. **Session** — short guided practice (30s / 1min / 3min)
+   - Includes a "this is making it worse" button at all times
+4. **Post-session reflection** — did this help or add pressure?
+5. **History** — compact view of past sessions with personalization notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Architecture
 
-## Deploy on Vercel
+See `docs/architecture.md`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Safety model
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `docs/safety-model.md`.
+
+## Data
+
+Sessions stored locally in `data/mindfulness.db` (SQLite via LibSQL).
+TTS audio cached in `data/tts-cache/` (SHA-256 hash-based filenames).
+Neither directory is committed to git.

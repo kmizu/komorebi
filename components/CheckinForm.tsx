@@ -1,0 +1,192 @@
+'use client';
+
+import { useState } from 'react';
+import type { CheckinData, SessionIntent, LastSessionOutcome } from '@/lib/types';
+
+interface CheckinFormProps {
+  onSubmit: (data: CheckinData) => Promise<void>;
+  loading?: boolean;
+}
+
+const MOOD_LABELS = ['Very low', 'Low', 'Neutral', 'Okay', 'Good'];
+const TENSION_LABELS = ['None', 'Mild', 'Moderate', 'High', 'Very high'];
+
+export function CheckinForm({ onSubmit, loading }: CheckinFormProps) {
+  const [mood, setMood] = useState<number>(3);
+  const [tension, setTension] = useState<number>(3);
+  const [selfCritical, setSelfCritical] = useState<boolean>(false);
+  const [intent, setIntent] = useState<SessionIntent>('calming');
+  const [lastSessionOutcome, setLastSessionOutcome] = useState<LastSessionOutcome | ''>('');
+  const [freeText, setFreeText] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      await onSubmit({
+        mood: mood as CheckinData['mood'],
+        tension: tension as CheckinData['tension'],
+        selfCritical,
+        intent,
+        lastSessionOutcome: lastSessionOutcome || undefined,
+        freeText: freeText.trim() || undefined,
+      });
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+      console.error(err);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-lg mx-auto">
+      {/* Mood */}
+      <div className="space-y-3">
+        <label className="block text-sm text-stone-600">How are you feeling right now?</label>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map(v => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setMood(v)}
+              className={`flex-1 py-2 text-sm rounded transition-colors ${
+                mood === v
+                  ? 'bg-stone-700 text-white'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-stone-400 text-center">
+          1 = {MOOD_LABELS[0]} · 5 = {MOOD_LABELS[4]}
+        </p>
+      </div>
+
+      {/* Tension */}
+      <div className="space-y-3">
+        <label className="block text-sm text-stone-600">
+          How much tension or pressure do you feel in your body or mind?
+        </label>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map(v => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setTension(v)}
+              className={`flex-1 py-2 text-sm rounded transition-colors ${
+                tension === v
+                  ? 'bg-stone-700 text-white'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-stone-400 text-center">
+          1 = {TENSION_LABELS[0]} · 5 = {TENSION_LABELS[4]}
+        </p>
+      </div>
+
+      {/* Self-critical */}
+      <div className="space-y-2">
+        <label className="block text-sm text-stone-600">
+          Are you being hard on yourself today?
+        </label>
+        <div className="flex gap-3">
+          {([false, true] as const).map(v => (
+            <button
+              key={String(v)}
+              type="button"
+              onClick={() => setSelfCritical(v)}
+              className={`flex-1 py-2 text-sm rounded transition-colors ${
+                selfCritical === v
+                  ? 'bg-stone-700 text-white'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              {v ? 'Yes' : 'No'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Intent */}
+      <div className="space-y-2">
+        <label className="block text-sm text-stone-600">What would feel most useful right now?</label>
+        <div className="flex gap-2">
+          {(['calming', 'grounding', 'checkin'] as SessionIntent[]).map(i => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setIntent(i)}
+              className={`flex-1 py-2 text-sm rounded transition-colors capitalize ${
+                intent === i
+                  ? 'bg-stone-700 text-white'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              {i === 'checkin' ? 'Just check in' : i.charAt(0).toUpperCase() + i.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Last session */}
+      <div className="space-y-2">
+        <label className="block text-sm text-stone-600">
+          How did your last session go? <span className="text-stone-400">(optional)</span>
+        </label>
+        <div className="flex gap-2">
+          {([
+            { value: '', label: 'Skip' },
+            { value: 'relieving', label: 'Relieving' },
+            { value: 'neutral', label: 'Neutral' },
+            { value: 'pressuring', label: 'Pressuring' },
+          ] as const).map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setLastSessionOutcome(value as LastSessionOutcome | '')}
+              className={`flex-1 py-2 text-xs rounded transition-colors ${
+                lastSessionOutcome === value
+                  ? 'bg-stone-700 text-white'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Free text */}
+      <div className="space-y-2">
+        <label className="block text-sm text-stone-600">
+          Anything else on your mind right now?{' '}
+          <span className="text-stone-400">(optional)</span>
+        </label>
+        <textarea
+          value={freeText}
+          onChange={e => setFreeText(e.target.value)}
+          maxLength={500}
+          rows={3}
+          placeholder="..."
+          className="w-full px-3 py-2 text-sm text-stone-700 bg-stone-50 border border-stone-200 rounded resize-none focus:outline-none focus:border-stone-400 placeholder:text-stone-300"
+        />
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full py-3 text-sm text-white bg-stone-700 rounded hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {loading ? 'Checking...' : 'Continue'}
+      </button>
+    </form>
+  );
+}
