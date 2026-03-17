@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback } from 'react';
 
 const TARGET_SAMPLE_RATE = 16000;
-const BUFFER_SIZE = 4096;
 
 function float32ToPCM16(input: Float32Array): Int16Array {
   const output = new Int16Array(input.length);
@@ -12,16 +11,6 @@ function float32ToPCM16(input: Float32Array): Int16Array {
     output[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
   }
   return output;
-}
-
-function downsample(pcm: Int16Array, fromRate: number, toRate: number): Int16Array {
-  if (fromRate === toRate) return pcm;
-  const ratio = fromRate / toRate;
-  const result = new Int16Array(Math.floor(pcm.length / ratio));
-  for (let i = 0; i < result.length; i++) {
-    result[i] = pcm[Math.floor(i * ratio)];
-  }
-  return result;
 }
 
 function pcm16ToBase64(pcm: Int16Array): string {
@@ -40,44 +29,116 @@ export function useRealtimeSTT(locale: string) {
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState('');
 
+  // Persistent across turns (kept alive between speech segments)
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const workletLoadedRef = useRef(false);
 
-  const cleanup = useCallback(() => {
-    processorRef.current?.disconnect();
-    processorRef.current = null;
+  // Disconnected between turns, reconnected each time user should speak
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+
+  // Stable ref so WS handler always calls the latest callback
+  const onCommittedRef = useRef<((text: string) => void) | null>(null);
+
+  // Ref-backed status for guards inside async callbacks
+  const statusRef = useRef<STTStatus>('idle');
+  const setStatusBoth = useCallback((s: STTStatus) => {
+    statusRef.current = s;
+    setStatus(s);
+  }, []);
+
+  // ── Full teardown (explicit stop or error) ────────────────────────────────
+  const stopAll = useCallback(() => {
+    workletNodeRef.current?.disconnect();
+    workletNodeRef.current = null;
+    audioSourceRef.current?.disconnect();
+    audioSourceRef.current = null;
     audioCtxRef.current?.close();
     audioCtxRef.current = null;
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
     wsRef.current?.close();
     wsRef.current = null;
-    setStatus('idle');
+    workletLoadedRef.current = false;
+    setStatusBoth('idle');
     setInterimText('');
+  }, [setStatusBoth]);
+
+  // ── Connect worklet to existing AudioContext + source ─────────────────────
+  // Called at the start of each speech turn (fast, no network round-trip)
+  const resumeAudio = useCallback(async () => {
+    const audioCtx = audioCtxRef.current;
+    const source = audioSourceRef.current;
+    if (!audioCtx || !source) return;
+
+    if (!workletLoadedRef.current) {
+      await audioCtx.audioWorklet.addModule('/audio-processor.js');
+      workletLoadedRef.current = true;
+    }
+
+    const workletNode = new AudioWorkletNode(audioCtx, 'pcm-processor');
+    workletNodeRef.current = workletNode;
+
+    workletNode.port.onmessage = (e) => {
+      if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+      const pcm16 = float32ToPCM16(e.data as Float32Array);
+      wsRef.current.send(JSON.stringify({
+        message_type: 'input_audio_chunk',
+        audio_base_64: pcm16ToBase64(pcm16),
+        commit: false,
+        sample_rate: TARGET_SAMPLE_RATE,
+      }));
+    };
+
+    source.connect(workletNode);
+    workletNode.connect(audioCtx.destination);
+    setStatusBoth('recording');
+  }, [setStatusBoth]);
+
+  // ── Disconnect worklet only (WS + stream stay alive for next turn) ────────
+  const pauseAudio = useCallback(() => {
+    workletNodeRef.current?.disconnect();
+    workletNodeRef.current = null;
   }, []);
 
+  // ── start: establish connection once, then just resumes audio each turn ───
   const start = useCallback(async (onCommitted: (text: string) => void) => {
+    // Always update the callback (called even when already recording, to stay fresh)
+    onCommittedRef.current = onCommitted;
+
+    const s = statusRef.current;
+    if (s === 'recording' || s === 'connecting') return;
+
+    // Fast path: WS is still alive from a previous turn — just restart audio
+    if (
+      wsRef.current?.readyState === WebSocket.OPEN &&
+      audioCtxRef.current &&
+      audioSourceRef.current
+    ) {
+      await resumeAudio();
+      return;
+    }
+
     setError('');
-    setStatus('connecting');
+    setStatusBoth('connecting');
 
     try {
-      // 1. Get single-use token from our server
+      // 1. Single-use auth token
       const tokenRes = await fetch('/api/stt-token', { method: 'POST' });
       const tokenJson = await tokenRes.json();
       if (!tokenJson.success) {
         setError(tokenJson.error ?? 'STT not configured');
-        setStatus('error');
+        setStatusBoth('error');
         return;
       }
-      const { token } = tokenJson;
 
-      // 2. Open WebSocket to ElevenLabs
+      // 2. WebSocket to ElevenLabs
       const lang = locale === 'ja' ? 'ja' : 'en';
       const url = [
         `wss://api.elevenlabs.io/v1/speech-to-text/realtime`,
-        `?token=${token}`,
+        `?token=${tokenJson.token}`,
         `&model_id=scribe_v2_realtime`,
         `&audio_format=pcm_16000`,
         `&commit_strategy=vad`,
@@ -97,27 +158,28 @@ export function useRealtimeSTT(locale: string) {
             const text = (msg.text ?? '').trim();
             setInterimText('');
             if (text) {
-              onCommitted(text);
-              cleanup();
+              onCommittedRef.current?.(text);
+              // Pause audio capture; WS stays alive for the next turn
+              pauseAudio();
+              setStatusBoth('idle');
             }
           } else if (msg.message_type?.includes('error') || msg.message_type === 'auth_error') {
             setError(msg.error ?? 'WebSocket error');
-            cleanup();
-            setStatus('error');
+            stopAll();
+            setStatusBoth('error');
           }
         } catch { /* ignore parse errors */ }
       };
 
       ws.onerror = () => {
         setError('Connection failed');
-        cleanup();
-        setStatus('error');
+        stopAll();
+        setStatusBoth('error');
       };
 
       ws.onclose = (e) => {
         if (e.code !== 1000) {
-          setStatus('idle');
-          setInterimText('');
+          stopAll();
         }
       };
 
@@ -126,47 +188,31 @@ export function useRealtimeSTT(locale: string) {
         setTimeout(() => reject(new Error('Connection timeout')), 5000);
       });
 
-      // 3. Capture microphone
+      // 3. Microphone
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
+      // AudioContext at target rate — browser handles mic resampling
       const audioCtx = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
       audioCtxRef.current = audioCtx;
 
       const source = audioCtx.createMediaStreamSource(stream);
-      const processor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
-      processorRef.current = processor;
+      audioSourceRef.current = source;
 
-      processor.onaudioprocess = (e) => {
-        if (wsRef.current?.readyState !== WebSocket.OPEN) return;
-        const float32 = e.inputBuffer.getChannelData(0);
-        const pcm16 = float32ToPCM16(float32);
-        const resampled = downsample(pcm16, audioCtx.sampleRate, TARGET_SAMPLE_RATE);
-        const audio_base_64 = pcm16ToBase64(resampled);
-
-        wsRef.current.send(JSON.stringify({
-          message_type: 'input_audio_chunk',
-          audio_base_64,
-          commit: false,
-          sample_rate: TARGET_SAMPLE_RATE,
-        }));
-      };
-
-      source.connect(processor);
-      processor.connect(audioCtx.destination);
-      setStatus('recording');
+      // 4. AudioWorklet (loads module + starts streaming)
+      await resumeAudio();
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       setError(msg);
-      cleanup();
-      setStatus('error');
+      stopAll();
+      setStatusBoth('error');
     }
-  }, [locale, cleanup]);
+  }, [locale, pauseAudio, resumeAudio, stopAll, setStatusBoth]);
 
   const stop = useCallback(() => {
-    cleanup();
-  }, [cleanup]);
+    stopAll();
+  }, [stopAll]);
 
   return { status, interimText, error, start, stop };
 }

@@ -233,7 +233,11 @@ export function ReflectionChat({ locale, onDone, loading: externalLoading }: Ref
     ? (locale === 'ja' ? '話し終えると自動で送信します' : 'Auto-sends when you stop speaking')
     : !autoListen
     ? (locale === 'ja' ? 'マイクオフ — マイクボタンで再開' : 'Muted — tap mic to resume')
-    : (locale === 'ja' ? '準備中...' : 'Waiting...');
+    : messages.length === 0 || busy
+    ? ''
+    : messages[messages.length - 1]?.role === 'agent'
+    ? (locale === 'ja' ? '話しかけてください' : 'Go ahead and speak')
+    : '';
 
   return (
     <div style={{ maxWidth: '36rem', margin: '0 auto' }}>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import type { SupervisorDecision, CheckinData } from '@/lib/types';
 import { CrisisBanner } from './CrisisBanner';
@@ -20,8 +21,44 @@ const RISK_ACCENT: Record<string, string> = {
   crisis:   '#d4c0c0',
 };
 
+const AUTO_START_SECS = 4;
+
 export function SupervisorReview({ decision, checkin: _checkin, onStart, onDecline, loading }: SupervisorReviewProps) {
   const t = useTranslations('review');
+
+  // Auto-advance for low-risk / proceed cases
+  const shouldAutoStart =
+    !loading &&
+    decision.action === 'proceed' &&
+    (decision.riskLevel === 'none' || decision.riskLevel === 'low');
+
+  const [countdown, setCountdown] = useState<number | null>(
+    shouldAutoStart ? AUTO_START_SECS : null
+  );
+
+  useEffect(() => {
+    if (!shouldAutoStart) return;
+
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    const timeout = setTimeout(() => {
+      onStart();
+    }, AUTO_START_SECS * 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (decision.riskLevel === 'crisis') {
     return <CrisisBanner message={decision.message} />;
@@ -64,7 +101,10 @@ export function SupervisorReview({ decision, checkin: _checkin, onStart, onDecli
       {decision.action !== 'stop' && decision.action !== 'crisis' ? (
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <button
-            onClick={onStart}
+            onClick={() => {
+              setCountdown(null);
+              onStart();
+            }}
             disabled={loading}
             style={{
               flex: 1,
@@ -80,10 +120,17 @@ export function SupervisorReview({ decision, checkin: _checkin, onStart, onDecli
               transition: 'background 0.2s',
             }}
           >
-            {loading ? t('starting') : t('begin')}
+            {loading
+              ? t('starting')
+              : countdown !== null
+              ? `${t('begin')} (${countdown})`
+              : t('begin')}
           </button>
           <button
-            onClick={onDecline}
+            onClick={() => {
+              setCountdown(null);
+              onDecline();
+            }}
             style={{
               padding: '0.8rem 1.2rem',
               background: 'none',
