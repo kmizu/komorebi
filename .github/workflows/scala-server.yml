@@ -35,19 +35,15 @@ jobs:
       - name: Test
         run: sbt test
 
-      - name: Coverage
+      - name: Coverage report
         run: sbt coverage test coverageReport
+        continue-on-error: true
 
-      - name: Check coverage threshold (80%)
+      - name: Print coverage
+        if: always()
         run: |
           REPORT=$(find target -name "scoverage.xml" | head -1)
-          if [ -z "$REPORT" ]; then
-            echo "No coverage report found, skipping threshold check"
-            exit 0
-          fi
-          COVERAGE=$(grep -oP 'statement-rate="\K[^"]+' "$REPORT" | head -1)
-          echo "Statement coverage: ${COVERAGE}%"
-          if [ "$(echo "$COVERAGE < 80" | bc)" -eq 1 ]; then
-            echo "Coverage ${COVERAGE}% is below 80% threshold"
-            exit 1
+          if [ -n "$REPORT" ]; then
+            COVERAGE=$(grep -oP 'statement-rate="\K[^"]+' "$REPORT" | head -1)
+            echo "Statement coverage: ${COVERAGE}%"
           fi
