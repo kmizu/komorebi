@@ -13,25 +13,47 @@ interface GuidancePlayerProps {
   onWorse: (report: string) => Promise<void>;
 }
 
+/**
+ * Split guidance text into sentences for staggered TTS playback.
+ * Sentences are spoken at intervals across the session duration,
+ * so the user isn't left in silence.
+ */
+function splitIntoSegments(text: string): string[] {
+  // Split on sentence-ending punctuation (EN + JA)
+  const raw = text.split(/(?<=[。.!?！？])\s*/).filter(s => s.trim().length > 0);
+  if (raw.length <= 1) return [text];
+  return raw;
+}
+
 export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, onWorse }: GuidancePlayerProps) {
   const t = useTranslations('guidance');
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [currentSegment, setCurrentSegment] = useState(0);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [audioError, setAudioError] = useState('');
   const [showWorseForm, setShowWorseForm] = useState(false);
   const [worseText, setWorseText] = useState('');
   const [escalating, setEscalating] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const segmentsRef = useRef(splitIntoSegments(guidance.text));
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
-  const loadAudio = useCallback(async () => {
-    setLoadingAudio(true);
-    setAudioError('');
+  const segments = segmentsRef.current;
+  const totalSegments = segments.length;
+
+  // Load and play a single TTS segment
+  const playSegment = useCallback(async (index: number) => {
+    if (!mountedRef.current || index >= totalSegments) return;
+
+    setLoadingAudio(index === 0);
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: guidance.text }),
+        body: JSON.stringify({ text: segments[index] }),
       });
+
+      if (!mountedRef.current) return;
 
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
@@ -40,12 +62,35 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      setAudioUrl(url);
 
-      setTimeout(() => {
-        audioRef.current?.play().catch(() => {});
-      }, 100);
+      if (!mountedRef.current) return;
+
+      // Play via a fresh audio element each time
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (!mountedRef.current) return;
+
+        const nextIdx = index + 1;
+        if (nextIdx < totalSegments) {
+          // Pause between segments: distribute across session duration
+          const pauseMs = totalSegments > 1
+            ? Math.min((guidance.duration * 1000) / totalSegments, 8000)
+            : 0;
+          timerRef.current = setTimeout(() => {
+            if (mountedRef.current) {
+              setCurrentSegment(nextIdx);
+              playSegment(nextIdx);
+            }
+          }, pauseMs);
+        }
+      };
+
+      audio.play().catch(() => {});
     } catch (err: unknown) {
+      if (!mountedRef.current) return;
       const msg = err instanceof Error ? err.message : 'Audio unavailable';
       if (msg.includes('not configured')) {
         setAudioError(t('audioUnavailable'));
@@ -53,13 +98,20 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
         setAudioError(t('audioError'));
       }
     } finally {
-      setLoadingAudio(false);
+      if (mountedRef.current) setLoadingAudio(false);
     }
-  }, [guidance.text, t]);
+  }, [segments, totalSegments, guidance.duration, t]);
 
-  // Auto-load & play TTS on mount
+  // Start staggered playback on mount
   useEffect(() => {
-    loadAudio();
+    mountedRef.current = true;
+    playSegment(0);
+
+    return () => {
+      mountedRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      audioRef.current?.pause();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -76,13 +128,14 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
     }
   };
 
-  const isBreath = decision.recommendedMode === 'breath' || guidance.mode === 'breath';
+  const guideMode = guidance.mode || decision.recommendedMode;
+  const showGuide = guideMode !== 'abort';
   const durLabel = guidance.duration === 30 ? t('dur30') : guidance.duration === 60 ? t('dur60') : t('dur180');
 
   return (
     <div style={{ maxWidth: '32rem', margin: '0 auto' }}>
-      {/* Breathing guide — only for breath mode */}
-      {isBreath && <BreathingGuide />}
+      {/* Visual guide — breathing ring for breath, ambient pulse for others */}
+      {showGuide && <BreathingGuide mode={guideMode as 'breath' | 'sound' | 'body' | 'external' | 'reset' | 'abort'} />}
 
       {/* Guidance text card */}
       <div style={{
@@ -110,19 +163,29 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
         )}
       </div>
 
-      {/* Audio */}
-      <div style={{ marginBottom: '1rem' }}>
-        {!audioUrl ? (
-          <div style={{ textAlign: 'center' }}>
-            {loadingAudio && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--ink-soft)' }}>{t('loadingAudio')}</p>
-            )}
+      {/* Audio status */}
+      <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+        {loadingAudio && (
+          <p style={{ fontSize: '0.78rem', color: 'var(--ink-soft)' }}>{t('loadingAudio')}</p>
+        )}
+        {!loadingAudio && !audioError && totalSegments > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', padding: '0.3rem 0' }}>
+            {segments.map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: i <= currentSegment ? 'var(--sage)' : 'var(--cream-d)',
+                  transition: 'background 0.4s',
+                }}
+              />
+            ))}
           </div>
-        ) : (
-          <audio ref={audioRef} src={audioUrl} controls style={{ width: '100%', height: '36px' }} />
         )}
         {audioError && (
-          <p style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', textAlign: 'center', marginTop: '0.4rem' }}>
+          <p style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', marginTop: '0.4rem' }}>
             {audioError}
           </p>
         )}
