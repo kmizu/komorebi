@@ -114,7 +114,11 @@
     "done": "Done",
     "breatheIn": "Breathe in",
     "hold": "Hold",
-    "breatheOut": "Breathe out"
+    "breatheOut": "Breathe out",
+    "soundHint": "Listen to the sounds around you",
+    "bodyHint": "Notice where your body meets the surface",
+    "externalHint": "Look at something in the room",
+    "resetHint": "Find one thing to rest your eyes on"
   },
   "post": {
     "pressureQuestion": "Did the practice ease the pressure, or add to it?",

@@ -114,7 +114,11 @@
     "done": "終わった",
     "breatheIn": "吸って",
     "hold": "止めて",
-    "breatheOut": "吐いて"
+    "breatheOut": "吐いて",
+    "soundHint": "周りの音に耳を澄ませて",
+    "bodyHint": "体が触れている面を感じて",
+    "externalHint": "部屋の何かを見つめて",
+    "resetHint": "目を休ませる場所を見つけて"
   },
   "post": {
     "pressureQuestion": "練習は楽になりましたか、それとも重くなりましたか？",

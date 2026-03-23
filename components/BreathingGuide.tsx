@@ -199,25 +199,67 @@ function BreathMode() {
   );
 }
 
-// ── Ambient mode (sound / body / external) ──────────────────────────────────
+// ── Mode hint keys ──────────────────────────────────────────────────────────
 
-function AmbientMode() {
+const MODE_HINT_KEYS: Record<string, string> = {
+  sound: 'soundHint',
+  body: 'bodyHint',
+  external: 'externalHint',
+  reset: 'resetHint',
+};
+
+// ── Mode icons (simple SVG) ─────────────────────────────────────────────────
+
+function ModeIcon({ mode, color }: { mode: string; color: string }) {
+  const size = 28;
+  const stroke = color;
+  const sw = 1.5;
+
+  if (mode === 'sound') return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round">
+      <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+    </svg>
+  );
+  if (mode === 'body') return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round">
+      <circle cx="12" cy="5" r="2" /><path d="M12 7v5m0 0l-3 5m3-5l3 5m-6-8h6" />
+    </svg>
+  );
+  if (mode === 'external') return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round">
+      <circle cx="12" cy="12" r="3" /><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" />
+    </svg>
+  );
+  // reset / default
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round">
+      <circle cx="12" cy="12" r="9" /><path d="M12 8v4l2 2" />
+    </svg>
+  );
+}
+
+// ── Ambient mode (sound / body / external / reset) ──────────────────────────
+
+function AmbientMode({ mode }: { mode: string }) {
+  const t = useTranslations('guidance');
   const [pulse, setPulse] = useState(0);
 
   useEffect(() => {
-    // Slow oscillation: 8-second cycle
     const iv = setInterval(() => {
       setPulse(p => (p + 1) % 80);
     }, 100);
     return () => clearInterval(iv);
   }, []);
 
-  // Sine wave for smooth oscillation
-  const t = Math.sin((pulse / 80) * Math.PI * 2);
-  const norm = (t + 1) / 2; // 0–1
+  const s = Math.sin((pulse / 80) * Math.PI * 2);
+  const norm = (s + 1) / 2;
   const scale = 1.0 + norm * 0.15;
   const warmth = 0.15 + norm * 0.35;
   const opacity = 0.12 + norm * 0.14;
+
+  const hintKey = MODE_HINT_KEYS[mode] ?? MODE_HINT_KEYS['reset'];
+  const hintColor = blendColor(warmth * 0.4);
+  const iconColor = blendColor(warmth * 0.6);
 
   return (
     <div style={{
@@ -257,16 +299,24 @@ function AmbientMode() {
           transition: 'transform 0.1s linear, background 0.1s linear',
         }} />
 
-        {/* Center dot */}
-        <div style={{
-          position: 'absolute',
-          width: '5px',
-          height: '5px',
-          borderRadius: '50%',
-          background: blendColor(warmth),
-          opacity: 0.4,
-        }} />
+        {/* Mode icon in center */}
+        <div style={{ position: 'relative', opacity: 0.6, transition: 'opacity 0.3s' }}>
+          <ModeIcon mode={mode} color={iconColor} />
+        </div>
       </div>
+
+      {/* Mode-specific hint label */}
+      <p style={{
+        marginTop: '1.5rem',
+        fontSize: '0.88rem',
+        fontWeight: 300,
+        color: hintColor,
+        letterSpacing: '0.08em',
+        textAlign: 'center',
+        transition: 'color 0.3s',
+      }}>
+        {t(hintKey as Parameters<typeof t>[0])}
+      </p>
     </div>
   );
 }
@@ -279,5 +329,5 @@ interface BreathingGuideProps {
 
 export function BreathingGuide({ mode = 'breath' }: BreathingGuideProps) {
   if (mode === 'breath') return <BreathMode />;
-  return <AmbientMode />;
+  return <AmbientMode mode={mode} />;
 }
