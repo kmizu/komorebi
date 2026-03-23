@@ -89,8 +89,8 @@ sbt "testOnly *RulesSpec"  # Run a single test class
 sbt coverage test coverageReport  # Coverage report (target: 80%+)
 sbt run                  # Start server on :8080
 
-# Enable Next.js proxy to Scala backend
-SCALA_BACKEND=http://localhost:8080 npm run dev
+# Next.js automatically proxies /api/* to localhost:8080
+npm run dev
 ```
 
 ### Stack

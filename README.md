@@ -24,10 +24,10 @@ Before each session, a counselor-style conversational agent listens to how you a
 cd komorebi-server
 sbt run                  # Starts on :8080
 
-# Frontend (Next.js)
+# Frontend (Next.js) — automatically proxies /api/* to the backend
 npm install
 cp .env.example .env.local
-SCALA_BACKEND=http://localhost:8080 npm run dev
+npm run dev
 ```
 
 Open http://localhost:3000 (or /en, /ja for localized).
@@ -40,7 +40,7 @@ Open http://localhost:3000 (or /en, /ja for localized).
 | `ELEVENLABS_API_KEY` | No | Voice playback. Without this, guidance is text-only. |
 | `ELEVENLABS_VOICE_ID` | No | Voice ID. Defaults to a calm English voice. |
 | `KOMOREBI_PORT` | No | Scala server port. Default: 8080. |
-| `SCALA_BACKEND` | No | Set on the Next.js side to proxy `/api/*` to the Scala server. |
+| `BACKEND_PORT` | No | Port the Next.js proxy targets. Default: 8080. |
 
 The app works fully without API keys. Pattern detection uses keyword rules, guidance uses preset scripts.
 

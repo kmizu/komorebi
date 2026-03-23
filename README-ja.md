@@ -22,10 +22,10 @@
 cd komorebi-server
 sbt run                  # :8080 で起動
 
-# フロントエンド（Next.js）
+# フロントエンド（Next.js）— /api/* は自動的にバックエンドにプロキシ
 npm install
 cp .env.example .env.local
-SCALA_BACKEND=http://localhost:8080 npm run dev
+npm run dev
 ```
 
 http://localhost:3000（または /ja）をブラウザで開く。
@@ -38,7 +38,7 @@ http://localhost:3000（または /ja）をブラウザで開く。
 | `ELEVENLABS_API_KEY` | 任意 | 音声再生。未設定時はテキストのみ。 |
 | `ELEVENLABS_VOICE_ID` | 任意 | 使用する音声ID。デフォルトは落ち着いた英語音声。 |
 | `KOMOREBI_PORT` | 任意 | Scalaサーバーのポート。デフォルト: 8080。 |
-| `SCALA_BACKEND` | 任意 | Next.js側に設定し、`/api/*` をScalaサーバーにプロキシ。 |
+| `BACKEND_PORT` | 任意 | Next.jsのプロキシ先ポート。デフォルト: 8080。 |
 
 **APIキーなしでも完全に動作します。**
 

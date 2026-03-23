@@ -6,14 +6,13 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 const nextConfig: NextConfig = {
   // No native modules needed (using @libsql/client instead of better-sqlite3)
 
-  // Proxy API calls to Scala backend when SCALA_BACKEND is set
+  // Proxy API calls to the Scala backend
   async rewrites() {
-    const scalaBackend = process.env.SCALA_BACKEND;
-    if (!scalaBackend) return [];
+    const backendPort = process.env.BACKEND_PORT ?? '8080';
     return [
       {
         source: '/api/:path*',
-        destination: `${scalaBackend}/api/:path*`,
+        destination: `http://localhost:${backendPort}/api/:path*`,
       },
     ];
   },
