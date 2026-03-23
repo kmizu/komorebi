@@ -1,4 +1,4 @@
-# breathe / ひといき
+# komorebi / 木漏れ日
 
 [日本語](README-ja.md)
 
