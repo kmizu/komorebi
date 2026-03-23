@@ -30,7 +30,11 @@ object Main extends IOApp.Simple:
         )
       )
 
-      // Initialize DB schema
+      // Ensure data directory exists and initialize DB schema
+      _ <- Resource.eval(IO.blocking {
+        val dbDir = java.nio.file.Paths.get(config.dbPath).getParent
+        if dbDir != null then java.nio.file.Files.createDirectories(dbDir)
+      })
       _ <- Resource.eval(Schema.initialize(xa))
 
       // Repositories
