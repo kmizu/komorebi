@@ -3,6 +3,8 @@ import { SessionHistory } from '@/components/SessionHistory';
 import { getTranslations } from 'next-intl/server';
 import type { SessionRecord, PersonalizationHints } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HistoryPage() {
   const t = await getTranslations('history');
 

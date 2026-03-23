@@ -110,7 +110,10 @@
     "adjustOrStop": "調整または停止",
     "adjusting": "調整中...",
     "cancel": "キャンセル",
-    "done": "終わった"
+    "done": "終わった",
+    "breatheIn": "吸って",
+    "hold": "止めて",
+    "breatheOut": "吐いて"
   },
   "post": {
     "pressureQuestion": "練習は楽になりましたか、それとも重くなりましたか？",

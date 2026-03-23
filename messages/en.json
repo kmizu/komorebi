@@ -110,7 +110,10 @@
     "adjustOrStop": "Adjust or stop",
     "adjusting": "Adjusting...",
     "cancel": "Cancel",
-    "done": "Done"
+    "done": "Done",
+    "breatheIn": "Breathe in",
+    "hold": "Hold",
+    "breatheOut": "Breathe out"
   },
   "post": {
     "pressureQuestion": "Did the practice ease the pressure, or add to it?",

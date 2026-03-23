@@ -68,77 +68,102 @@ export default function SessionPage() {
       </div>
 
       {state.step === 'reflecting' && (
-        <ReflectionChat
-          locale={locale}
-          onDone={handleReflectionDone}
-          loading={loading}
-        />
+        <div key="reflecting" className="animate-fade-in">
+          <ReflectionChat
+            locale={locale}
+            onDone={handleReflectionDone}
+            loading={loading}
+          />
+        </div>
       )}
 
       {state.step === 'review' && (
-        <SupervisorReview
-          decision={state.decision}
-          checkin={{
-            mood: state.profile.mood,
-            tension: state.profile.tension,
-            selfCritical: state.profile.selfCritical,
-            intent: state.profile.intent,
-            lastSessionOutcome: state.profile.lastSessionOutcome,
-            freeText: state.profile.freeText,
-          }}
-          loading={loading}
-          onStart={withLoading(() => startSession(state.decision, state.profile))}
-          onDecline={() => reset()}
-        />
+        <div key="review" className="animate-fade-in">
+          <SupervisorReview
+            decision={state.decision}
+            checkin={{
+              mood: state.profile.mood,
+              tension: state.profile.tension,
+              selfCritical: state.profile.selfCritical,
+              intent: state.profile.intent,
+              lastSessionOutcome: state.profile.lastSessionOutcome,
+              freeText: state.profile.freeText,
+            }}
+            loading={loading}
+            onStart={withLoading(() => startSession(state.decision, state.profile))}
+            onDecline={() => reset()}
+          />
+        </div>
       )}
 
       {state.step === 'session' && (
-        <GuidancePlayer
-          guidance={state.guidance}
-          decision={state.decision}
-          checkin={{
-            mood: state.profile.mood,
-            tension: state.profile.tension,
-            selfCritical: state.profile.selfCritical,
-            intent: state.profile.intent,
-            lastSessionOutcome: state.profile.lastSessionOutcome,
-            freeText: state.profile.freeText,
-          }}
-          onEnd={endSession}
-          onWorse={async (report) => {
-            await reportWorse(report, state.profile);
-          }}
-        />
+        <div key="session" className="animate-fade-in">
+          <GuidancePlayer
+            guidance={state.guidance}
+            decision={state.decision}
+            checkin={{
+              mood: state.profile.mood,
+              tension: state.profile.tension,
+              selfCritical: state.profile.selfCritical,
+              intent: state.profile.intent,
+              lastSessionOutcome: state.profile.lastSessionOutcome,
+              freeText: state.profile.freeText,
+            }}
+            onEnd={endSession}
+            onWorse={async (report) => {
+              await reportWorse(report, state.profile);
+            }}
+          />
+        </div>
       )}
 
       {state.step === 'post' && (
-        <PostReflection
-          sessionId={state.sessionId}
-          loading={loading}
-          onSubmit={async (id, outcome) => {
-            setLoading(true);
-            try {
-              await submitPost(id, outcome);
-            } finally {
-              setLoading(false);
-            }
-          }}
-        />
+        <div key="post" className="animate-fade-in">
+          <PostReflection
+            sessionId={state.sessionId}
+            loading={loading}
+            onSubmit={async (id, outcome) => {
+              setLoading(true);
+              try {
+                await submitPost(id, outcome);
+              } finally {
+                setLoading(false);
+              }
+            }}
+          />
+        </div>
       )}
 
       {state.step === 'done' && (
-        <div className="space-y-6 max-w-lg mx-auto text-center">
-          <p className="text-stone-600">{t('done')}</p>
-          <div className="flex gap-4 justify-center">
+        <div key="done" className="animate-fade-in" style={{ maxWidth: '32rem', margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ color: 'var(--ink-mid)', marginBottom: '1.5rem' }}>{t('done')}</p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
             <button
               onClick={reset}
-              className="px-5 py-2.5 text-sm text-white bg-[#6b8271] rounded hover:bg-[#5a7060] transition-colors"
+              style={{
+                padding: '0.65rem 1.6rem',
+                fontSize: '0.82rem',
+                color: '#fff',
+                background: 'var(--sage)',
+                border: 'none',
+                borderRadius: '100px',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
             >
               {t('anotherSession')}
             </button>
             <Link
               href="/history"
-              className="px-5 py-2.5 text-sm text-stone-600 bg-stone-100 rounded hover:bg-stone-200 transition-colors"
+              style={{
+                padding: '0.65rem 1.6rem',
+                fontSize: '0.82rem',
+                color: 'var(--ink-mid)',
+                background: 'var(--warm-l)',
+                borderRadius: '100px',
+                textDecoration: 'none',
+                transition: 'background 0.2s',
+              }}
             >
               {t('viewHistory')}
             </Link>

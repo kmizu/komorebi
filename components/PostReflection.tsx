@@ -35,53 +35,73 @@ export function PostReflection({ sessionId, onSubmit, loading }: PostReflectionP
     }
   };
 
+  const choiceBtn = (selected: boolean): React.CSSProperties => ({
+    flex: 1,
+    padding: '0.6rem',
+    fontSize: '0.85rem',
+    borderRadius: '100px',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background 0.2s, color 0.2s',
+    background: selected ? 'var(--sage)' : 'var(--warm-l)',
+    color: selected ? '#fff' : 'var(--ink-mid)',
+    fontFamily: 'inherit',
+    fontWeight: 300,
+  });
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-7 max-w-lg mx-auto">
-      <div>
-        <p className="text-sm text-stone-600 mb-2">{t('pressureQuestion')}</p>
-        <div className="flex gap-3">
-          {([
-            { value: true, labelKey: 'reducedIt' as const },
-            { value: false, labelKey: 'addedToIt' as const },
-          ]).map(({ value, labelKey }) => (
-            <button
-              key={String(value)}
-              type="button"
-              onClick={() => setFeltBetter(value)}
-              className={`flex-1 py-2 text-sm rounded transition-colors ${
-                feltBetter === value ? 'bg-[#6b8271] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-              }`}
-            >
-              {t(labelKey)}
-            </button>
-          ))}
+    <form onSubmit={handleSubmit} style={{ maxWidth: '32rem', margin: '0 auto' }}>
+      {/* Pressure question */}
+      <div style={{ marginBottom: '1.75rem' }}>
+        <p style={{ fontSize: '0.88rem', color: 'var(--ink-mid)', marginBottom: '0.6rem' }}>
+          {t('pressureQuestion')}
+        </p>
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button
+            type="button"
+            onClick={() => setFeltBetter(true)}
+            style={choiceBtn(feltBetter === true)}
+          >
+            {t('reducedIt')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFeltBetter(false)}
+            style={choiceBtn(feltBetter === false)}
+          >
+            {t('addedToIt')}
+          </button>
         </div>
       </div>
 
-      <div>
-        <p className="text-sm text-stone-600 mb-2">{t('continueQuestion')}</p>
-        <div className="flex gap-3">
-          {([
-            { value: true, labelKey: 'yes' as const },
-            { value: false, labelKey: 'no' as const },
-          ]).map(({ value, labelKey }) => (
-            <button
-              key={String(value)}
-              type="button"
-              onClick={() => setWouldContinue(value)}
-              className={`flex-1 py-2 text-sm rounded transition-colors ${
-                wouldContinue === value ? 'bg-[#6b8271] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-              }`}
-            >
-              {t(labelKey)}
-            </button>
-          ))}
+      {/* Continue question */}
+      <div style={{ marginBottom: '1.75rem' }}>
+        <p style={{ fontSize: '0.88rem', color: 'var(--ink-mid)', marginBottom: '0.6rem' }}>
+          {t('continueQuestion')}
+        </p>
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button
+            type="button"
+            onClick={() => setWouldContinue(true)}
+            style={choiceBtn(wouldContinue === true)}
+          >
+            {t('yes')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setWouldContinue(false)}
+            style={choiceBtn(wouldContinue === false)}
+          >
+            {t('no')}
+          </button>
         </div>
       </div>
 
-      <div>
-        <p className="text-sm text-stone-600 mb-2">
-          {t('notesLabel')} <span className="text-stone-400">{t('optional')}</span>
+      {/* Notes */}
+      <div style={{ marginBottom: '1.75rem' }}>
+        <p style={{ fontSize: '0.88rem', color: 'var(--ink-mid)', marginBottom: '0.6rem' }}>
+          {t('notesLabel')}{' '}
+          <span style={{ color: 'var(--ink-soft)' }}>{t('optional')}</span>
         </p>
         <textarea
           value={notes}
@@ -89,16 +109,41 @@ export function PostReflection({ sessionId, onSubmit, loading }: PostReflectionP
           placeholder="..."
           rows={2}
           maxLength={400}
-          className="w-full px-3 py-2 text-sm text-stone-700 bg-stone-50 border border-stone-200 rounded resize-none focus:outline-none focus:border-stone-400 placeholder:text-stone-300"
+          style={{
+            width: '100%',
+            padding: '0.6rem 0.75rem',
+            fontSize: '0.85rem',
+            color: 'var(--ink)',
+            background: 'var(--warm-l)',
+            border: '1px solid var(--cream-d)',
+            borderRadius: '0.5rem',
+            resize: 'none',
+            fontFamily: 'inherit',
+            fontWeight: 300,
+          }}
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p style={{ fontSize: '0.82rem', color: '#c47070', marginBottom: '1rem' }}>{error}</p>
+      )}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 text-sm text-white bg-[#6b8271] rounded hover:bg-[#5a7060] disabled:opacity-50 transition-colors"
+        style={{
+          width: '100%',
+          padding: '0.8rem',
+          fontSize: '0.82rem',
+          letterSpacing: '0.06em',
+          color: '#fff',
+          background: 'var(--sage)',
+          border: 'none',
+          borderRadius: '100px',
+          cursor: loading ? 'wait' : 'pointer',
+          opacity: loading ? 0.7 : 1,
+          transition: 'background 0.2s',
+        }}
       >
         {loading ? t('saving') : t('done')}
       </button>

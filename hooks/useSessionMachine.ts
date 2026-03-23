@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useEffect } from 'react';
 import type {
   SupervisorDecision,
   GuidanceScript,
@@ -8,6 +8,34 @@ import type {
   PersonalizationHints,
   ReflectionProfile,
 } from '@/lib/types';
+
+// ── localStorage persistence ─────────────────────────────────────────────────
+
+const STORAGE_KEY = 'breath_session_state';
+
+function loadPersistedState(): SessionStep | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SessionStep;
+    if (parsed.step === 'reflecting' || parsed.step === 'done') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistState(state: SessionStep) {
+  if (typeof window === 'undefined') return;
+  if (state.step === 'reflecting' || state.step === 'done') {
+    localStorage.removeItem(STORAGE_KEY);
+    return;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch { /* quota exceeded */ }
+}
 
 // ── State machine types ───────────────────────────────────────────────────────
 
@@ -40,10 +68,14 @@ type SessionAction =
   | { type: 'ESCALATE'; decision: SupervisorDecision; guidance: GuidanceScript }
   | { type: 'SESSION_END' }
   | { type: 'POST_DONE' }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'RESTORE'; state: SessionStep };
 
 function reducer(state: SessionStep, action: SessionAction): SessionStep {
   switch (action.type) {
+    case 'RESTORE':
+      return action.state;
+
     case 'REFLECTION_DONE':
       if (state.step !== 'reflecting') return state;
       return {
@@ -130,6 +162,19 @@ const EMPTY_HINTS: PersonalizationHints = {
 
 export function useSessionMachine(locale = 'en') {
   const [state, dispatch] = useReducer(reducer, { step: 'reflecting' });
+
+  // Restore persisted state after hydration
+  useEffect(() => {
+    const persisted = loadPersistedState();
+    if (persisted) {
+      dispatch({ type: 'RESTORE', state: persisted });
+    }
+  }, []);
+
+  // Persist on every state change
+  useEffect(() => {
+    persistState(state);
+  }, [state]);
 
   // Called when reflection chat completes with a profile
   const personalize = useCallback(async (profile: ReflectionProfile) => {
