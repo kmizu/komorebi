@@ -18,10 +18,14 @@
 ## セットアップ
 
 ```bash
+# バックエンド（Scala 3）
+cd komorebi-server
+sbt run                  # :8080 で起動
+
+# フロントエンド（Next.js）
 npm install
 cp .env.example .env.local
-# .env.local を編集してAPIキーを設定（どちらも任意）
-npm run dev
+SCALA_BACKEND=http://localhost:8080 npm run dev
 ```
 
 http://localhost:3000（または /ja）をブラウザで開く。
@@ -33,10 +37,16 @@ http://localhost:3000（または /ja）をブラウザで開く。
 | `OPENAI_API_KEY` | 任意 | LLMエージェント（gpt-5.4）。未設定時はルールベース＋プリセット。 |
 | `ELEVENLABS_API_KEY` | 任意 | 音声再生。未設定時はテキストのみ。 |
 | `ELEVENLABS_VOICE_ID` | 任意 | 使用する音声ID。デフォルトは落ち着いた英語音声。 |
+| `KOMOREBI_PORT` | 任意 | Scalaサーバーのポート。デフォルト: 8080。 |
+| `SCALA_BACKEND` | 任意 | Next.js側に設定し、`/api/*` をScalaサーバーにプロキシ。 |
 
 **APIキーなしでも完全に動作します。**
 
 ## アーキテクチャ
+
+**フロントエンド:** Next.js（React, Tailwind CSS, next-intl による i18n）
+
+**バックエンド:** Scala 3（Tapir + http4s + Doobie + SQLite + sttp + circe）
 
 3つのエージェントが順番に実行されます：
 
@@ -44,9 +54,9 @@ http://localhost:3000（または /ja）をブラウザで開く。
 - **パーソナライゼーションエージェント** — プロフィール＋長期記憶＋ルールベース検出から `SessionPlan` を生成（論文§3.3の6次元）
 - **エキスパートアラインメントエージェント** — プランから個人化されたガイダンステキストを生成
 
-長期記憶（カウンセラー風ケースノート）はセッションごとに蓄積され、次回以降の推奨に反映されます。
+3層安全モデル（Crisis → Distress → Subtle）がルールベースのキーワード検出でリスクを評価。LLMはパターンを追加できますが、リスクを下げることはできません。長期記憶（カウンセラー風ケースノート）はセッションごとに蓄積され、次回以降の推奨に反映されます。
 
 ## データ
 
-セッションデータと長期記憶は `data/mindfulness.db`（SQLite）にローカル保存されます。
+セッションデータと長期記憶は `data/mindfulness.db`（SQLite、Doobie + xerial JDBC）にローカル保存されます。
 音声キャッシュは `data/tts-cache/` に保存されます。どちらもgitにはコミットされません。

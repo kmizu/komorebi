@@ -20,10 +20,14 @@ Before each session, a counselor-style conversational agent listens to how you a
 ## Setup
 
 ```bash
+# Backend (Scala 3)
+cd komorebi-server
+sbt run                  # Starts on :8080
+
+# Frontend (Next.js)
 npm install
 cp .env.example .env.local
-# Edit .env.local — add API keys (both optional)
-npm run dev
+SCALA_BACKEND=http://localhost:8080 npm run dev
 ```
 
 Open http://localhost:3000 (or /en, /ja for localized).
@@ -35,10 +39,16 @@ Open http://localhost:3000 (or /en, /ja for localized).
 | `OPENAI_API_KEY` | No | LLM-based agents (gpt-5.4). Without this, rule-based detection + preset scripts. |
 | `ELEVENLABS_API_KEY` | No | Voice playback. Without this, guidance is text-only. |
 | `ELEVENLABS_VOICE_ID` | No | Voice ID. Defaults to a calm English voice. |
+| `KOMOREBI_PORT` | No | Scala server port. Default: 8080. |
+| `SCALA_BACKEND` | No | Set on the Next.js side to proxy `/api/*` to the Scala server. |
 
 The app works fully without API keys. Pattern detection uses keyword rules, guidance uses preset scripts.
 
 ## Architecture
+
+**Frontend:** Next.js (React, Tailwind CSS, next-intl for i18n)
+
+**Backend:** Scala 3 (Tapir + http4s + Doobie + SQLite + sttp + circe)
 
 Three agents run in sequence each session:
 
@@ -46,9 +56,9 @@ Three agents run in sequence each session:
 - **Personalization Agent** — builds a `SessionPlan` using the profile + long-term `UserMemory` + rule-based pattern detection (6 dimensions from paper §3.3)
 - **Expert Alignment Agent** — generates personalized guidance text from the plan
 
-Long-term memory (counselor-style case notes) accumulates across sessions and shapes future recommendations.
+A 3-layer safety model (Crisis → Distress → Subtle) evaluates risk using rule-based keyword detection first; LLM enrichment can add patterns but never downgrade risk. Long-term memory (counselor-style case notes) accumulates across sessions and shapes future recommendations.
 
 ## Data
 
-Sessions and user memory stored locally in `data/mindfulness.db` (SQLite via LibSQL).
+Sessions and user memory stored locally in `data/mindfulness.db` (SQLite via Doobie + xerial JDBC).
 TTS audio cached in `data/tts-cache/`. Neither is committed to git.
