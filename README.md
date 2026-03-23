@@ -20,14 +20,8 @@ Before each session, a counselor-style conversational agent listens to how you a
 ## Setup
 
 ```bash
-# Backend (Scala 3)
-cd komorebi-server
-sbt run                  # Starts on :8080
-
-# Frontend (Next.js) — automatically proxies /api/* to the backend
-npm install
-cp .env.example .env.local
-npm run dev
+./start.sh    # Starts backend (:8080) + frontend (:3000)
+./stop.sh     # Stops both
 ```
 
 Open http://localhost:3000 (or /en, /ja for localized).

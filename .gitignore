@@ -48,3 +48,4 @@ next-env.d.ts
 
 # local MCP config (contains credentials)
 .mcp.json
+.komorebi.pids

@@ -18,14 +18,8 @@
 ## セットアップ
 
 ```bash
-# バックエンド（Scala 3）
-cd komorebi-server
-sbt run                  # :8080 で起動
-
-# フロントエンド（Next.js）— /api/* は自動的にバックエンドにプロキシ
-npm install
-cp .env.example .env.local
-npm run dev
+./start.sh    # バックエンド(:8080) + フロントエンド(:3000) を同時起動
+./stop.sh     # 両方停止
 ```
 
 http://localhost:3000（または /ja）をブラウザで開く。
