@@ -1,12 +1,13 @@
 {
   "nav": {
-    "brand": "ひといき",
+    "brand": "komorebi",
     "session": "セッション",
     "history": "記録",
     "switchLocale": "English"
   },
   "home": {
-    "title": "ひといき",
+    "title": "komorebi",
+    "tagline": "こころに差す、やわらかな光",
     "subtitle": "あなたの練習を覚えていく、静かなパートナー。何が助けになるかを学びながら、練習が重荷になっていないかを一緒に確かめます。",
     "watchesFor": "気にかけていること",
     "watchItems": [

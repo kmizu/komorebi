@@ -1,13 +1,14 @@
 {
   "nav": {
-    "brand": "breathe",
+    "brand": "komorebi",
     "session": "Session",
     "history": "History",
     "switchLocale": "日本語"
   },
   "home": {
-    "title": "breathe",
-    "subtitle": "A quiet companion that remembers your practice over time — learning what helps, and noticing when mindfulness might be adding weight rather than easing it.",
+    "title": "komorebi",
+    "tagline": "dappled light for a quiet mind",
+    "subtitle": "A gentle companion that remembers your practice — learning what helps, and noticing when mindfulness might be adding weight rather than easing it.",
     "watchesFor": "I pay attention to",
     "watchItems": [
       "Pushing too hard",

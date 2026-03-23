@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('brand'),
     description: locale === 'ja'
-      ? 'あなたのマインドフルネスをそっとそばで見守るパートナー'
-      : 'A gentle companion for mindful practice',
+      ? 'こころに差す、やわらかな光 — パーソナルマインドフルネスパートナー'
+      : 'Dappled light for a quiet mind — personal mindfulness companion',
   };
 }
 

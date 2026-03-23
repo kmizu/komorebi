@@ -1,16 +1,33 @@
 @import "tailwindcss";
 
+/* ══════════════════════════════════════════════════════════════════════════
+   K O M O R E B I  —  木漏れ日
+   Dappled light through the forest canopy.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 /* ── Palette ──────────────────────────────────────────────────────────────── */
 :root {
-  --cream:   #faf7f2;
-  --cream-d: #f0ebe0;
-  --ink:     #3d3530;
-  --ink-mid: #6b5f57;
-  --ink-soft:#9d8f85;
-  --sage:    #6b8271;
-  --sage-d:  #5a7060;
-  --sage-l:  #e8efe9;
-  --warm-l:  #f5f0e8;
+  /* Forest floor — warm cream lit by filtered sun */
+  --cream:   #f9f4eb;
+  --cream-d: #efe7d9;
+
+  /* Ink — warm umber */
+  --ink:     #3a3028;
+  --ink-mid: #6b5c4e;
+  --ink-soft:#9e8e7c;
+
+  /* Leaf — deep forest green */
+  --sage:    #5c7a5e;
+  --sage-d:  #4a6a4d;
+  --sage-l:  #dfe9e0;
+
+  /* Komorebi — golden dappled light */
+  --komorebi:      #c9a84c;
+  --komorebi-soft: #eddcaa;
+  --komorebi-glow: rgba(201, 168, 76, 0.12);
+
+  /* Surfaces */
+  --warm-l:  #f5ede0;
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
@@ -27,6 +44,11 @@ html {
 
 body {
   background-color: var(--cream);
+  /* Subtle warm radial light — like sun filtering from above */
+  background-image:
+    radial-gradient(ellipse at 28% -8%, rgba(201, 168, 76, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 78% 12%, rgba(92, 122, 94, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-noto), 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
   font-weight: 300;
@@ -35,13 +57,51 @@ body {
   min-height: 100dvh;
 }
 
-/* ── Typography helpers ───────────────────────────────────────────────────── */
+/* Organic noise texture — film grain for natural feel */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  z-index: 9999;
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
 .font-display {
   font-family: var(--font-cormorant), 'Georgia', serif;
   letter-spacing: 0.04em;
 }
 
 /* ── Animations ───────────────────────────────────────────────────────────── */
+
+/* Dappled light — bokeh drift */
+@keyframes drift {
+  0%   { transform: translate(0, 0) scale(1);       opacity: 0.35; }
+  25%  { transform: translate(14px, -10px) scale(1.08); opacity: 0.6;  }
+  50%  { transform: translate(-7px, 12px) scale(0.93);  opacity: 0.4;  }
+  75%  { transform: translate(10px, 5px) scale(1.05);   opacity: 0.55; }
+  100% { transform: translate(0, 0) scale(1);       opacity: 0.35; }
+}
+
+/* Komorebi breathing ring */
+@keyframes komorebi-ring {
+  0%, 100% { transform: scale(1);    opacity: 0.20; }
+  50%       { transform: scale(1.20); opacity: 0.08; }
+}
+
+@keyframes komorebi-ring-inner {
+  0%, 100% { transform: scale(1);    opacity: 0.28; }
+  50%       { transform: scale(1.12); opacity: 0.14; }
+}
+
+.animate-komorebi-ring       { animation: komorebi-ring 5.5s ease-in-out infinite; }
+.animate-komorebi-ring-inner { animation: komorebi-ring-inner 5.5s ease-in-out infinite 0.5s; }
+
+/* Legacy breathing ring (used in BreathingGuide component) */
 @keyframes breathe-ring {
   0%, 100% { transform: scale(1);    opacity: 0.18; }
   50%       { transform: scale(1.18); opacity: 0.08; }
@@ -52,6 +112,10 @@ body {
   50%       { transform: scale(1.10); opacity: 0.12; }
 }
 
+.animate-breathe-ring       { animation: breathe-ring 5s ease-in-out infinite; }
+.animate-breathe-ring-inner { animation: breathe-ring-inner 5s ease-in-out infinite 0.4s; }
+
+/* General */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -67,29 +131,13 @@ body {
   40%           { transform: scale(1);   opacity: 0.8; }
 }
 
-.animate-breathe-ring       { animation: breathe-ring 5s ease-in-out infinite; }
-.animate-breathe-ring-inner { animation: breathe-ring-inner 5s ease-in-out infinite 0.4s; }
-
 @keyframes mic-pulse {
   0%   { transform: scale(1);   opacity: 0.5; }
   70%  { transform: scale(1.6); opacity: 0; }
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-.btn-start {
-  display: inline-block;
-  padding: 0.65rem 2.2rem;
-  background: var(--sage);
-  color: #fff;
-  border-radius: 100px;
-  font-size: 0.82rem;
-  letter-spacing: 0.1em;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: background 0.2s, transform 0.2s;
-}
-.btn-start:hover { background: var(--sage-d); }
-
+/* ── Utility classes ──────────────────────────────────────────────────────── */
 .animate-fade-up  { animation: fade-up  0.5s ease-out both; }
 .animate-fade-in  { animation: fade-in  0.4s ease-out both; }
 
@@ -98,10 +146,30 @@ body {
 .delay-300 { animation-delay: 0.3s; }
 .delay-500 { animation-delay: 0.5s; }
 .delay-700 { animation-delay: 0.7s; }
+.delay-900 { animation-delay: 0.9s; }
 
-.dot-pulse { animation: dot-pulse 1.4s ease-in-out infinite; }
+.dot-pulse   { animation: dot-pulse 1.4s ease-in-out infinite; }
 .dot-pulse-2 { animation: dot-pulse 1.4s ease-in-out infinite 0.2s; }
 .dot-pulse-3 { animation: dot-pulse 1.4s ease-in-out infinite 0.4s; }
+
+/* ── Button ───────────────────────────────────────────────────────────────── */
+.btn-start {
+  display: inline-block;
+  padding: 0.7rem 2.4rem;
+  background: var(--sage);
+  color: #fff;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+}
+.btn-start:hover {
+  background: var(--sage-d);
+  box-shadow: 0 6px 28px var(--komorebi-glow), 0 2px 8px rgba(92,122,94,0.10);
+  transform: translateY(-1px);
+}
 
 /* ── Form elements ────────────────────────────────────────────────────────── */
 textarea,
