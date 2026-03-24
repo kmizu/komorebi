@@ -25,9 +25,16 @@ function splitIntoSegments(text: string): string[] {
   return raw;
 }
 
+function formatTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}`;
+}
+
 export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, onWorse }: GuidancePlayerProps) {
   const t = useTranslations('guidance');
   const [currentSegment, setCurrentSegment] = useState(0);
+  const [remaining, setRemaining] = useState<number>(guidance.duration);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [audioError, setAudioError] = useState('');
   const [showWorseForm, setShowWorseForm] = useState(false);
@@ -37,6 +44,25 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
   const segmentsRef = useRef(splitIntoSegments(guidance.text));
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
+  const endCalledRef = useRef(false);
+
+  // ── Session countdown timer ───────────────────────────────────────────
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(iv);
+          if (!endCalledRef.current) {
+            endCalledRef.current = true;
+            setTimeout(onEnd, 300);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [onEnd]);
 
   const segments = segmentsRef.current;
   const totalSegments = segments.length;
@@ -130,10 +156,26 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
 
   const guideMode = guidance.mode || decision.recommendedMode;
   const showGuide = guideMode !== 'abort';
-  const durLabel = guidance.duration === 30 ? t('dur30') : guidance.duration === 60 ? t('dur60') : t('dur180');
 
   return (
     <div style={{ maxWidth: '32rem', margin: '0 auto' }}>
+      {/* Session countdown */}
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '0.8rem',
+      }}>
+        <span style={{
+          fontSize: '1.6rem',
+          fontWeight: 300,
+          color: remaining <= 5 ? 'var(--komorebi)' : 'var(--sage-d)',
+          fontFamily: 'var(--font-cormorant), Georgia, serif',
+          letterSpacing: '0.04em',
+          transition: 'color 0.5s',
+        }}>
+          {formatTime(remaining)}
+        </span>
+      </div>
+
       {/* Visual guide — breathing ring for breath, ambient pulse for others */}
       {showGuide && <BreathingGuide mode={guideMode as 'breath' | 'sound' | 'body' | 'external' | 'reset' | 'abort'} />}
 
@@ -156,11 +198,6 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
         }}>
           {guidance.text}
         </p>
-        {guidance.isPreset && (
-          <p style={{ margin: '0.75rem 0 0', fontSize: '0.72rem', color: 'var(--ink-soft)' }}>
-            {durLabel}
-          </p>
-        )}
       </div>
 
       {/* Audio status */}
@@ -284,23 +321,23 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
         </div>
       )}
 
-      {/* Done button */}
+      {/* End early button */}
       <button
-        onClick={onEnd}
+        onClick={() => { endCalledRef.current = true; onEnd(); }}
         style={{
           width: '100%',
           padding: '0.8rem',
           fontSize: '0.82rem',
-          color: 'var(--ink-mid)',
+          color: 'var(--ink-soft)',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
           transition: 'color 0.2s',
         }}
-        onMouseOver={e => { e.currentTarget.style.color = 'var(--ink)'; }}
-        onMouseOut={e => { e.currentTarget.style.color = 'var(--ink-mid)'; }}
+        onMouseOver={e => { e.currentTarget.style.color = 'var(--ink-mid)'; }}
+        onMouseOut={e => { e.currentTarget.style.color = 'var(--ink-soft)'; }}
       >
-        {t('done')}
+        {t('endEarly')}
       </button>
     </div>
   );
