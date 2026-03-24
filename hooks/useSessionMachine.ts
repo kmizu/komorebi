@@ -65,6 +65,7 @@ type SessionAction =
       hints: PersonalizationHints;
     }
   | { type: 'SESSION_START'; guidance: GuidanceScript; sessionId: string }
+  | { type: 'QUICK_START'; profile: ReflectionProfile; decision: SupervisorDecision; guidance: GuidanceScript; sessionId: string }
   | { type: 'ESCALATE'; decision: SupervisorDecision; guidance: GuidanceScript }
   | { type: 'SESSION_END' }
   | { type: 'POST_DONE' }
@@ -91,6 +92,15 @@ function reducer(state: SessionStep, action: SessionAction): SessionStep {
         step: 'session',
         profile: state.profile,
         decision: state.decision,
+        guidance: action.guidance,
+        sessionId: action.sessionId,
+      };
+
+    case 'QUICK_START':
+      return {
+        step: 'session',
+        profile: action.profile,
+        decision: action.decision,
         guidance: action.guidance,
         sessionId: action.sessionId,
       };
@@ -259,6 +269,68 @@ export function useSessionMachine(locale = 'en') {
     return { guidance, sessionId: sessionJson.data.id as string };
   }, [locale]);
 
+  // Quick start: skip reflection, go straight to a guided session with chosen mode
+  const quickStart = useCallback(async (mode: string, duration: 30 | 60 | 180 = 60) => {
+    const profile: ReflectionProfile = {
+      mood: 3,
+      tension: 3,
+      selfCritical: false,
+      intent: 'calming' as const,
+      freeText: '',
+      themes: [],
+      anchors: [],
+      emotionalTone: 'neutral' as const,
+    };
+    const decision: SupervisorDecision = {
+      riskLevel: 'none',
+      patterns: [],
+      action: 'proceed',
+      recommendedMode: mode as SupervisorDecision['recommendedMode'],
+      message: '',
+      guidanceDuration: duration,
+    };
+
+    const guidanceRes = await fetch('/api/guidance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode,
+        duration,
+        riskLevel: 'none',
+        supervisorMessage: '',
+        locale,
+      }),
+    });
+    const guidanceJson = await guidanceRes.json();
+    if (!guidanceJson.success) throw new Error(guidanceJson.error);
+    const guidance = guidanceJson.data.script as GuidanceScript;
+
+    const sessionRes = await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        checkin: {
+          mood: profile.mood,
+          tension: profile.tension,
+          selfCritical: profile.selfCritical,
+          intent: profile.intent,
+        },
+        supervisorDecision: decision,
+        guidance,
+      }),
+    });
+    const sessionJson = await sessionRes.json();
+    if (!sessionJson.success) throw new Error(sessionJson.error);
+
+    dispatch({
+      type: 'QUICK_START',
+      profile,
+      decision,
+      guidance,
+      sessionId: sessionJson.data.id,
+    });
+  }, [locale]);
+
   const reportWorse = useCallback(async (
     userReport: string,
     profile: ReflectionProfile
@@ -324,6 +396,7 @@ export function useSessionMachine(locale = 'en') {
     state,
     personalize,
     startSession,
+    quickStart,
     reportWorse,
     endSession,
     submitPost,

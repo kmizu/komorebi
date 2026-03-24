@@ -10,6 +10,13 @@ import { PostReflection } from '@/components/PostReflection';
 import { Link } from '@/i18n/navigation';
 import type { ReflectionProfile } from '@/lib/types';
 
+const QUICK_MODES = [
+  { mode: 'breath',   icon: '🌬️', dur: 60 as const },
+  { mode: 'sound',    icon: '🎧', dur: 60 as const },
+  { mode: 'body',     icon: '🧘', dur: 60 as const },
+  { mode: 'external', icon: '👁️', dur: 60 as const },
+] as const;
+
 export default function SessionPage() {
   const t = useTranslations('session');
   const locale = useLocale();
@@ -18,6 +25,7 @@ export default function SessionPage() {
     state,
     personalize,
     startSession,
+    quickStart,
     reportWorse,
     endSession,
     submitPost,
@@ -69,6 +77,80 @@ export default function SessionPage() {
 
       {state.step === 'reflecting' && (
         <div key="reflecting" className="animate-fade-in">
+          {/* Quick start mode selection */}
+          <div style={{ marginBottom: '2rem' }}>
+            <p style={{
+              fontSize: '0.72rem',
+              color: 'var(--ink-soft)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: '0.8rem',
+            }}>
+              {t('quickStart')}
+            </p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '0.6rem',
+            }}>
+              {QUICK_MODES.map(({ mode, icon, dur }) => (
+                <button
+                  key={mode}
+                  disabled={loading}
+                  onClick={async () => {
+                    setLoading(true);
+                    try { await quickStart(mode, dur); }
+                    finally { setLoading(false); }
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.8rem 0.4rem',
+                    background: '#fff',
+                    border: '1px solid var(--cream-d)',
+                    borderRadius: '0.65rem',
+                    cursor: loading ? 'wait' : 'pointer',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    boxShadow: '0 1px 4px rgba(107,130,113,0.04)',
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.borderColor = 'var(--komorebi-soft)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px var(--komorebi-glow)';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.borderColor = 'var(--cream-d)';
+                    e.currentTarget.style.boxShadow = '0 1px 4px rgba(107,130,113,0.04)';
+                  }}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>{icon}</span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    color: 'var(--ink-mid)',
+                    fontWeight: 400,
+                  }}>
+                    {t(`modes.${mode}` as Parameters<typeof t>[0])}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.8rem',
+            marginBottom: '1.5rem',
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--cream-d)' }} />
+            <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)', letterSpacing: '0.06em' }}>
+              {t('orReflect')}
+            </span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--cream-d)' }} />
+          </div>
+
           <ReflectionChat
             locale={locale}
             onDone={handleReflectionDone}

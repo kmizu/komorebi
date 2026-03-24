@@ -37,6 +37,14 @@
       "practice": "Practice",
       "reflect": "After"
     },
+    "quickStart": "Quick session — 1 minute",
+    "orReflect": "or talk first",
+    "modes": {
+      "breath": "Breathing",
+      "sound": "Sounds",
+      "body": "Body",
+      "external": "Looking"
+    },
     "done": "Saved. Take your time.",
     "anotherSession": "Another session",
     "viewHistory": "Your history"

@@ -37,6 +37,14 @@
       "practice": "練習",
       "reflect": "振り返り"
     },
+    "quickStart": "すぐ始める — 1分間",
+    "orReflect": "または話してから",
+    "modes": {
+      "breath": "呼吸",
+      "sound": "音",
+      "body": "体の感覚",
+      "external": "目で見る"
+    },
     "done": "保存しました。ゆっくりどうぞ。",
     "anotherSession": "もう一度",
     "viewHistory": "記録を見る"
