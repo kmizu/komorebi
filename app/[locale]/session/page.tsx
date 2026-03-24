@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useSessionMachine } from '@/hooks/useSessionMachine';
 import { ReflectionChat } from '@/components/ReflectionChat';
 import { SupervisorReview } from '@/components/SupervisorReview';
@@ -16,6 +17,8 @@ const QUICK_MODES = [
   { mode: 'body',     icon: '🧘', dur: 60 as const },
   { mode: 'external', icon: '👁️', dur: 60 as const },
 ] as const;
+
+const VALID_MODES = new Set(['breath', 'sound', 'body', 'external']);
 
 export default function SessionPage() {
   const t = useTranslations('session');
@@ -33,6 +36,19 @@ export default function SessionPage() {
   } = useSessionMachine(locale);
 
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const autoStartedRef = useRef(false);
+
+  // Auto-start if ?mode= is in the URL (from home page quick-mode links)
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    const modeParam = searchParams.get('mode');
+    if (modeParam && VALID_MODES.has(modeParam) && state.step === 'reflecting') {
+      autoStartedRef.current = true;
+      setLoading(true);
+      quickStart(modeParam, 60).finally(() => setLoading(false));
+    }
+  }, [searchParams, state.step, quickStart]);
 
   const withLoading = <T,>(fn: () => Promise<T>) => async () => {
     setLoading(true);
@@ -58,7 +74,7 @@ export default function SessionPage() {
   return (
     <div className="space-y-8">
       {/* Step indicator */}
-      <div className="flex gap-2 items-center text-xs text-stone-400">
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.72rem' }}>
         {stepKeys.map((key, i) => {
           const currentIdx = stepOrder.indexOf(state.step);
           const done = currentIdx > i;
@@ -66,9 +82,13 @@ export default function SessionPage() {
           return (
             <span
               key={key}
-              className={`${active ? 'text-stone-700' : done ? 'text-stone-400' : 'text-stone-200'}`}
+              style={{
+                color: active ? 'var(--ink)' : done ? 'var(--sage)' : 'var(--cream-d)',
+                fontWeight: active ? 400 : 300,
+                transition: 'color 0.3s',
+              }}
             >
-              {i > 0 && <span className="mr-2">·</span>}
+              {i > 0 && <span style={{ margin: '0 0.15rem', color: 'var(--cream-d)' }}>·</span>}
               {t(`steps.${key}`)}
             </span>
           );
@@ -218,7 +238,26 @@ export default function SessionPage() {
 
       {state.step === 'done' && (
         <div key="done" className="animate-fade-in" style={{ maxWidth: '32rem', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ color: 'var(--ink-mid)', marginBottom: '1.5rem' }}>{t('done')}</p>
+          {/* Warm completion glow */}
+          <div style={{
+            width: '80px', height: '80px', margin: '0 auto 1.5rem',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, var(--komorebi-glow) 0%, transparent 70%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              width: '8px', height: '8px', borderRadius: '50%',
+              background: 'var(--komorebi)', opacity: 0.5,
+              boxShadow: '0 0 16px rgba(201,168,76,0.3)',
+            }} />
+          </div>
+
+          <p style={{
+            color: 'var(--ink-mid)',
+            marginBottom: '2rem',
+            fontSize: '0.9rem',
+            fontWeight: 300,
+          }}>{t('done')}</p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
             <button
               onClick={reset}

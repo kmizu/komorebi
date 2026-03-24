@@ -25,6 +25,12 @@
       "No pressure to meditate longer."
     ],
     "startSession": "Begin",
+    "modes": {
+      "breath": "Breathing",
+      "sound": "Sounds",
+      "body": "Body",
+      "external": "Looking"
+    },
     "llmActive": "AI guidance: on",
     "llmInactive": "AI guidance: off — add OPENAI_API_KEY to .env.local",
     "ttsActive": "Voice: available",

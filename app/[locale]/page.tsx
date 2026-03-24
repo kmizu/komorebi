@@ -151,6 +151,49 @@ export default async function Home() {
         </div>
       </div>
 
+      {/* ── Quick modes ──────────────────────────────────────────────────── */}
+      <div
+        className="animate-fade-up delay-900"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '0.6rem',
+          marginBottom: '2.5rem',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        {([
+          { mode: 'breath',   icon: '🌬️' },
+          { mode: 'sound',    icon: '🎧' },
+          { mode: 'body',     icon: '🧘' },
+          { mode: 'external', icon: '👁️' },
+        ] as const).map(({ mode, icon }) => (
+          <Link
+            key={mode}
+            href={`/session?mode=${mode}`}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.3rem',
+              padding: '0.85rem 0.4rem',
+              background: '#fff',
+              border: '1px solid var(--cream-d)',
+              borderRadius: '0.65rem',
+              textDecoration: 'none',
+              transition: 'border-color 0.2s, box-shadow 0.2s',
+              boxShadow: '0 1px 4px rgba(107,130,113,0.04)',
+            }}
+          >
+            <span style={{ fontSize: '1.3rem' }}>{icon}</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--ink-mid)', fontWeight: 400 }}>
+              {t(`modes.${mode}` as Parameters<typeof t>[0])}
+            </span>
+          </Link>
+        ))}
+      </div>
+
       {/* ── Watch list ────────────────────────────────────────────────────── */}
       <div
         className="animate-fade-up delay-900"

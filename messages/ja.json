@@ -25,6 +25,12 @@
       "長く瞑想させようとしません。"
     ],
     "startSession": "はじめる",
+    "modes": {
+      "breath": "呼吸",
+      "sound": "音",
+      "body": "体の感覚",
+      "external": "目で見る"
+    },
     "llmActive": "AIガイダンス: オン",
     "llmInactive": "AIガイダンス: オフ — .env.local に OPENAI_API_KEY を追加",
     "ttsActive": "音声: 利用可能",

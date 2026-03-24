@@ -37,8 +37,6 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
   const [remaining, setRemaining] = useState<number>(guidance.duration);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [audioError, setAudioError] = useState('');
-  const [showWorseForm, setShowWorseForm] = useState(false);
-  const [worseText, setWorseText] = useState('');
   const [escalating, setEscalating] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const segmentsRef = useRef(splitIntoSegments(guidance.text));
@@ -144,13 +142,11 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
   const handleWorse = async () => {
     setEscalating(true);
     try {
-      await onWorse(worseText || 'This is making things worse.');
+      await onWorse('This is making things worse.');
     } catch {
       // continue regardless
     } finally {
       setEscalating(false);
-      setShowWorseForm(false);
-      setWorseText('');
     }
   };
 
@@ -228,98 +224,35 @@ export function GuidancePlayer({ guidance, decision, checkin: _checkin, onEnd, o
         )}
       </div>
 
-      {/* Worse form */}
-      {!showWorseForm ? (
-        <button
-          onClick={() => setShowWorseForm(true)}
-          style={{
-            width: '100%',
-            padding: '0.65rem',
-            fontSize: '0.82rem',
-            color: 'var(--ink-soft)',
-            background: 'none',
-            border: '1px solid var(--cream-d)',
-            borderRadius: '100px',
-            cursor: 'pointer',
-            transition: 'border-color 0.2s, color 0.2s',
-            marginBottom: '0.5rem',
-          }}
-          onMouseOver={e => {
-            e.currentTarget.style.borderColor = 'var(--ink-soft)';
-            e.currentTarget.style.color = 'var(--ink-mid)';
-          }}
-          onMouseOut={e => {
-            e.currentTarget.style.borderColor = 'var(--cream-d)';
-            e.currentTarget.style.color = 'var(--ink-soft)';
-          }}
-        >
-          {t('worseBtn')}
-        </button>
-      ) : (
-        <div style={{
-          padding: '1rem 1.25rem',
+      {/* Worse button — always visible, one tap to escalate */}
+      <button
+        onClick={handleWorse}
+        disabled={escalating}
+        style={{
+          width: '100%',
+          padding: '0.65rem',
+          fontSize: '0.82rem',
+          color: escalating ? 'var(--ink-soft)' : '#c47070',
+          background: 'none',
           border: '1px solid var(--cream-d)',
-          borderRadius: '0.75rem',
+          borderRadius: '100px',
+          cursor: escalating ? 'wait' : 'pointer',
+          transition: 'border-color 0.2s, color 0.2s',
           marginBottom: '0.5rem',
-        }}>
-          <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: 'var(--ink-mid)' }}>
-            {t('worseTitle')}
-          </p>
-          <textarea
-            value={worseText}
-            onChange={e => setWorseText(e.target.value)}
-            placeholder={t('worsePlaceholder')}
-            rows={2}
-            maxLength={300}
-            style={{
-              width: '100%',
-              padding: '0.6rem 0.75rem',
-              fontSize: '0.85rem',
-              background: 'var(--warm-l)',
-              border: '1px solid var(--cream-d)',
-              borderRadius: '0.5rem',
-              resize: 'none',
-              fontFamily: 'inherit',
-              fontWeight: 300,
-              color: 'var(--ink)',
-              marginBottom: '0.75rem',
-            }}
-          />
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={handleWorse}
-              disabled={escalating}
-              style={{
-                flex: 1,
-                padding: '0.6rem',
-                fontSize: '0.82rem',
-                color: '#fff',
-                background: 'var(--sage)',
-                border: 'none',
-                borderRadius: '100px',
-                cursor: escalating ? 'wait' : 'pointer',
-                opacity: escalating ? 0.7 : 1,
-                transition: 'background 0.2s',
-              }}
-            >
-              {escalating ? t('adjusting') : t('adjustOrStop')}
-            </button>
-            <button
-              onClick={() => setShowWorseForm(false)}
-              style={{
-                padding: '0.6rem 1rem',
-                fontSize: '0.82rem',
-                color: 'var(--ink-soft)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {t('cancel')}
-            </button>
-          </div>
-        </div>
-      )}
+        }}
+        onMouseOver={e => {
+          if (!escalating) {
+            e.currentTarget.style.borderColor = '#e0b8b8';
+            e.currentTarget.style.background = 'rgba(196,112,112,0.04)';
+          }
+        }}
+        onMouseOut={e => {
+          e.currentTarget.style.borderColor = 'var(--cream-d)';
+          e.currentTarget.style.background = 'none';
+        }}
+      >
+        {escalating ? t('adjusting') : t('worseBtn')}
+      </button>
 
       {/* End early button */}
       <button
